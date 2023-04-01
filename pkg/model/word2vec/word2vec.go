@@ -41,14 +41,15 @@ type word2vec struct {
 
 	corpus corpus.Corpus
 
-	param      *matrix.Matrix
-	subsampler *subsample.Subsampler
-	currentlr  float64
-	mod        mod
-	optimizer  optimizer
-	updates    chan string
-	haltupdt   chan bool
-	latestnews string
+	param           *matrix.Matrix
+	subsampler      *subsample.Subsampler
+	currentlr       float64
+	mod             mod
+	optimizer       optimizer
+	updates         chan string
+	haltupdt        chan bool
+	interationcount int
+	latestnews      string
 
 	verbose *verbose.Verbose
 }
@@ -261,17 +262,15 @@ func (w *word2vec) WordVector(typ vector.Type) *matrix.Matrix {
 // override
 //
 
-func (w *word2vec) Reporter(xmit chan string) {
+func (w *word2vec) Reporter(ct chan int, m chan string) {
 	running := true
 	for running {
 		select {
 		case <-w.haltupdt:
 			running = false
-		//case m := <-w.updates:
-		//	// fmt.Println("Reporter() - " + m)
-		//	xmit <- m
 		default:
-			xmit <- w.latestnews
+			ct <- w.interationcount
+			m <- w.latestnews
 		}
 	}
 }
@@ -331,15 +330,18 @@ func (w *word2vec) Train(r io.ReadSeeker) error {
 	// uncomment when debugging
 	// cannot run the wego bin unless you do: "fatal error: all goroutines are asleep - deadlock!"
 
-	//xmit := make(chan string)
-	//go w.Reporter(xmit)
-	//
+	//ct := make(chan int)
+	//msg := make(chan string)
+	//go w.Reporter(ct, msg)
 	//x := func() {
 	//	for {
 	//		select {
-	//		case m := <-xmit:
-	//			fmt.Println("xmit() - " + m)
+	//		case m := <-ct:
+	//			fmt.Println(m)
+	//		case m := <-msg:
+	//			fmt.Println(m)
 	//		}
+	//
 	//	}
 	//}
 	//go x()
@@ -420,6 +422,7 @@ func (w *word2vec) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
 				// fmt.Printf("trained %d words %v\r", cnt, clk.AllElapsed())
 				// w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
 				w.latestnews = fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
+				w.interationcount += 1
 			}
 		})
 	}
@@ -427,5 +430,6 @@ func (w *word2vec) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
 		// fmt.Printf("trained %d words %v\r\n", cnt, clk.AllElapsed())
 		// w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
 		w.latestnews = fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
+		w.interationcount += 1
 	})
 }
