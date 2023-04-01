@@ -48,6 +48,7 @@ type word2vec struct {
 	optimizer  optimizer
 	updates    chan string
 	haltupdt   chan bool
+	latestnews string
 
 	verbose *verbose.Verbose
 }
@@ -266,9 +267,11 @@ func (w *word2vec) Reporter(xmit chan string) {
 		select {
 		case <-w.haltupdt:
 			running = false
-		case m := <-w.updates:
-			// fmt.Println("Reporter() - " + m)
-			xmit <- m
+		//case m := <-w.updates:
+		//	// fmt.Println("Reporter() - " + m)
+		//	xmit <- m
+		default:
+			xmit <- w.latestnews
 		}
 	}
 }
@@ -415,12 +418,14 @@ func (w *word2vec) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
 		w.verbose.Do(func() {
 			if cnt%w.opts.LogBatch == 0 {
 				// fmt.Printf("trained %d words %v\r", cnt, clk.AllElapsed())
-				w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
+				// w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
+				w.latestnews = fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
 			}
 		})
 	}
 	w.verbose.Do(func() {
 		// fmt.Printf("trained %d words %v\r\n", cnt, clk.AllElapsed())
-		w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
+		// w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
+		w.latestnews = fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
 	})
 }
