@@ -258,19 +258,27 @@ func (w *word2vec) WordVector(typ vector.Type) *matrix.Matrix {
 // override
 //
 
-func (w *word2vec) Reporter(ctx context.Context, snd chan string) {
+func (w *word2vec) Reporter(halt chan bool, snd chan string) {
 	for {
-		select {
-		case <-ctx.Done():
-			break
-		case m := <-w.updates:
-			snd <- m
-			fmt.Println("report: " + m)
-		}
+		//select {
+		//case m := <-w.updates:
+		//	snd <- m
+		//	fmt.Println("report: " + m)
+		//case <-halt:
+		//	break
+		m := <-w.updates
+		fmt.Println("report: " + m)
+		snd <- m
 	}
 }
 
 func (w *word2vec) Train(r io.ReadSeeker) error {
+	w.updates = make(chan string)
+	h := make(chan bool)
+	z := make(chan string)
+	w.updates <- "hello"
+	go w.Reporter(h, z)
+
 	if w.opts.DocInMemory {
 		w.corpus = memory.New(r, w.opts.ToLower, w.opts.MaxCount, w.opts.MinCount)
 	} else {
@@ -318,9 +326,6 @@ func (w *word2vec) Train(r io.ReadSeeker) error {
 	default:
 		return errors.Errorf("invalid optimizer: %s not in %s|%s", w.opts.OptimizerType, NegativeSampling, HierarchicalSoftmax)
 	}
-
-	w.updates = make(chan string)
-	// go w.Reporter()
 
 	if w.opts.DocInMemory {
 		if err := w.modifiedtrain(); err != nil {
