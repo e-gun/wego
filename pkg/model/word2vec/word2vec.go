@@ -46,8 +46,10 @@ type word2vec struct {
 	currentlr  float64
 	mod        mod
 	optimizer  optimizer
-	verbose    *verbose.Verbose
 	updates    chan string
+	trialcount int
+
+	verbose *verbose.Verbose
 }
 
 func New(opts ...ModelOption) (model.Model, error) {
@@ -258,27 +260,20 @@ func (w *word2vec) WordVector(typ vector.Type) *matrix.Matrix {
 // override
 //
 
-func (w *word2vec) Reporter(halt chan bool, snd chan string) {
-	for {
-		//select {
-		//case m := <-w.updates:
-		//	snd <- m
-		//	fmt.Println("report: " + m)
-		//case <-halt:
-		//	break
-		m := <-w.updates
-		fmt.Println("report: " + m)
-		snd <- m
+func (w *word2vec) Reporter(halt chan bool, xmit chan string) {
+	running := true
+	for running {
+		select {
+		case <-halt:
+			running = false
+		case m := <-w.updates:
+			// fmt.Println("Reporter() - " + m)
+			xmit <- m
+		}
 	}
 }
 
 func (w *word2vec) Train(r io.ReadSeeker) error {
-	w.updates = make(chan string)
-	h := make(chan bool)
-	z := make(chan string)
-	w.updates <- "hello"
-	go w.Reporter(h, z)
-
 	if w.opts.DocInMemory {
 		w.corpus = memory.New(r, w.opts.ToLower, w.opts.MaxCount, w.opts.MinCount)
 	} else {
@@ -327,6 +322,25 @@ func (w *word2vec) Train(r io.ReadSeeker) error {
 		return errors.Errorf("invalid optimizer: %s not in %s|%s", w.opts.OptimizerType, NegativeSampling, HierarchicalSoftmax)
 	}
 
+	w.updates = make(chan string)
+	halt := make(chan bool)
+
+	// uncomment when debugging
+	// cannot run the wego bin unless you do: "fatal error: all goroutines are asleep - deadlock!"
+
+	//xmit := make(chan string)
+	//go w.Reporter(halt, xmit)
+	//
+	//x := func() {
+	//	for {
+	//		select {
+	//		case m := <-xmit:
+	//			fmt.Println("xmit() - " + m)
+	//		}
+	//	}
+	//}
+	//go x()
+
 	if w.opts.DocInMemory {
 		if err := w.modifiedtrain(); err != nil {
 			return err
@@ -336,6 +350,7 @@ func (w *word2vec) Train(r io.ReadSeeker) error {
 			return err
 		}
 	}
+	halt <- true
 	return nil
 }
 
@@ -345,7 +360,7 @@ func (w *word2vec) modifiedtrain() error {
 		w.opts.Goroutines,
 		len(doc),
 	)
-
+	w.trialcount = 0
 	for i := 1; i <= w.opts.Iter; i++ {
 		trained, clk := make(chan struct{}), clock.New()
 		go w.modifiedobserve(trained, clk)
@@ -408,5 +423,4 @@ func (w *word2vec) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
 		// fmt.Printf("trained %d words %v\r\n", cnt, clk.AllElapsed())
 		w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
 	})
-	close(w.updates)
 }

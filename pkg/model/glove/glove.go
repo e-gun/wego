@@ -205,6 +205,6 @@ func (g *glove) WordVector(typ vector.Type) *matrix.Matrix {
 // modifications
 //
 
-func (g *glove) Reporter(halt chan bool, snd chan string) {
+func (g *glove) Reporter(halt chan bool, xmit chan string) {
 
 }
