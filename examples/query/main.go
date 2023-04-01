@@ -18,8 +18,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/ynqa/wego/pkg/embedding"
-	"github.com/ynqa/wego/pkg/search"
+	"github.com/e-gun/wego/pkg/embedding"
+	"github.com/e-gun/wego/pkg/search"
 )
 
 func main() {

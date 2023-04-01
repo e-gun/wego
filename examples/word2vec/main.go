@@ -17,8 +17,8 @@ package main
 import (
 	"os"
 
-	"github.com/ynqa/wego/pkg/model/modelutil/vector"
-	"github.com/ynqa/wego/pkg/model/word2vec"
+	"github.com/e-gun/wego/pkg/model/modelutil/vector"
+	"github.com/e-gun/wego/pkg/model/word2vec"
 )
 
 func main() {

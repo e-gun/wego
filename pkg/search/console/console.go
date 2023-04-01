@@ -20,11 +20,11 @@ import (
 	"go/parser"
 	"go/token"
 
+	"github.com/e-gun/wego/pkg/embedding"
+	"github.com/e-gun/wego/pkg/embedding/embutil"
+	"github.com/e-gun/wego/pkg/search"
 	"github.com/peterh/liner"
 	"github.com/pkg/errors"
-	"github.com/ynqa/wego/pkg/embedding"
-	"github.com/ynqa/wego/pkg/embedding/embutil"
-	"github.com/ynqa/wego/pkg/search"
 )
 
 type searchparams struct {

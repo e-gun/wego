@@ -17,8 +17,8 @@ package model
 import (
 	"io"
 
-	"github.com/ynqa/wego/pkg/model/modelutil/matrix"
-	"github.com/ynqa/wego/pkg/model/modelutil/vector"
+	"github.com/e-gun/wego/pkg/model/modelutil/matrix"
+	"github.com/e-gun/wego/pkg/model/modelutil/vector"
 )
 
 type Model interface {

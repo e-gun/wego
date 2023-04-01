@@ -20,8 +20,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/e-gun/wego/pkg/embedding/embutil"
 	"github.com/stretchr/testify/assert"
-	"github.com/ynqa/wego/pkg/embedding/embutil"
 )
 
 func TestLoad(t *testing.T) {

@@ -20,13 +20,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/ynqa/wego/pkg/embedding"
-	"github.com/ynqa/wego/pkg/model"
-	"github.com/ynqa/wego/pkg/model/glove"
-	"github.com/ynqa/wego/pkg/model/lexvec"
-	"github.com/ynqa/wego/pkg/model/modelutil/vector"
-	"github.com/ynqa/wego/pkg/model/word2vec"
-	"github.com/ynqa/wego/pkg/search"
+	"github.com/e-gun/wego/pkg/embedding"
+	"github.com/e-gun/wego/pkg/model"
+	"github.com/e-gun/wego/pkg/model/glove"
+	"github.com/e-gun/wego/pkg/model/lexvec"
+	"github.com/e-gun/wego/pkg/model/modelutil/vector"
+	"github.com/e-gun/wego/pkg/model/word2vec"
+	"github.com/e-gun/wego/pkg/search"
 )
 
 const (

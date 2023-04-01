@@ -15,8 +15,8 @@
 package word2vec
 
 import (
-	"github.com/ynqa/wego/pkg/model/modelutil"
-	"github.com/ynqa/wego/pkg/model/modelutil/matrix"
+	"github.com/e-gun/wego/pkg/model/modelutil"
+	"github.com/e-gun/wego/pkg/model/modelutil/matrix"
 )
 
 type mod interface {

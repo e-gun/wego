@@ -21,9 +21,9 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 
-	"github.com/ynqa/wego/pkg/embedding"
-	"github.com/ynqa/wego/pkg/embedding/embutil"
-	"github.com/ynqa/wego/pkg/search/searchutil"
+	"github.com/e-gun/wego/pkg/embedding"
+	"github.com/e-gun/wego/pkg/embedding/embutil"
+	"github.com/e-gun/wego/pkg/search/searchutil"
 )
 
 // Neighbor stores the word with cosine similarity value on the target.

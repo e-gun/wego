@@ -23,17 +23,17 @@ import (
 
 	"golang.org/x/sync/semaphore"
 
+	"github.com/e-gun/wego/pkg/corpus"
+	"github.com/e-gun/wego/pkg/corpus/fs"
+	"github.com/e-gun/wego/pkg/corpus/memory"
+	"github.com/e-gun/wego/pkg/model"
+	"github.com/e-gun/wego/pkg/model/modelutil"
+	"github.com/e-gun/wego/pkg/model/modelutil/matrix"
+	"github.com/e-gun/wego/pkg/model/modelutil/subsample"
+	"github.com/e-gun/wego/pkg/model/modelutil/vector"
+	"github.com/e-gun/wego/pkg/util/clock"
+	"github.com/e-gun/wego/pkg/util/verbose"
 	"github.com/pkg/errors"
-	"github.com/ynqa/wego/pkg/corpus"
-	"github.com/ynqa/wego/pkg/corpus/fs"
-	"github.com/ynqa/wego/pkg/corpus/memory"
-	"github.com/ynqa/wego/pkg/model"
-	"github.com/ynqa/wego/pkg/model/modelutil"
-	"github.com/ynqa/wego/pkg/model/modelutil/matrix"
-	"github.com/ynqa/wego/pkg/model/modelutil/subsample"
-	"github.com/ynqa/wego/pkg/model/modelutil/vector"
-	"github.com/ynqa/wego/pkg/util/clock"
-	"github.com/ynqa/wego/pkg/util/verbose"
 )
 
 type word2vec struct {

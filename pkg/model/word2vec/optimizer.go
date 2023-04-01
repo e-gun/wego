@@ -17,10 +17,10 @@ package word2vec
 import (
 	"math/rand"
 
-	"github.com/ynqa/wego/pkg/corpus/dictionary"
-	"github.com/ynqa/wego/pkg/corpus/dictionary/node"
-	"github.com/ynqa/wego/pkg/model/modelutil"
-	"github.com/ynqa/wego/pkg/model/modelutil/matrix"
+	"github.com/e-gun/wego/pkg/corpus/dictionary"
+	"github.com/e-gun/wego/pkg/corpus/dictionary/node"
+	"github.com/e-gun/wego/pkg/model/modelutil"
+	"github.com/e-gun/wego/pkg/model/modelutil/matrix"
 )
 
 type optimizer interface {

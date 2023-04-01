@@ -20,9 +20,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/ynqa/wego/cmd/query/cmdutil"
-	"github.com/ynqa/wego/pkg/embedding"
-	"github.com/ynqa/wego/pkg/search"
+	"github.com/e-gun/wego/cmd/query/cmdutil"
+	"github.com/e-gun/wego/pkg/embedding"
+	"github.com/e-gun/wego/pkg/search"
 )
 
 var (

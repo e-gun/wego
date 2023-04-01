@@ -15,9 +15,9 @@
 package corpus
 
 import (
-	co "github.com/ynqa/wego/pkg/corpus/cooccurrence"
-	"github.com/ynqa/wego/pkg/corpus/dictionary"
-	"github.com/ynqa/wego/pkg/util/verbose"
+	co "github.com/e-gun/wego/pkg/corpus/cooccurrence"
+	"github.com/e-gun/wego/pkg/corpus/dictionary"
+	"github.com/e-gun/wego/pkg/util/verbose"
 )
 
 type Corpus interface {

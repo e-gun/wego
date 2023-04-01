@@ -17,7 +17,7 @@ package filter
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/ynqa/wego/pkg/corpus/dictionary"
+	"github.com/e-gun/wego/pkg/corpus/dictionary"
 )
 
 var (
