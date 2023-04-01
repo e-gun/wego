@@ -285,6 +285,6 @@ func (l *lexvec) WordVector(typ vector.Type) *matrix.Matrix {
 // modificaitons
 //
 
-func (l *lexvec) Reporter(halt chan bool, xmit chan string) {
+func (l *lexvec) Reporter(xmit chan string) {
 
 }

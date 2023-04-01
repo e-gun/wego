@@ -47,7 +47,7 @@ type word2vec struct {
 	mod        mod
 	optimizer  optimizer
 	updates    chan string
-	trialcount int
+	haltupdt   chan bool
 
 	verbose *verbose.Verbose
 }
@@ -260,11 +260,11 @@ func (w *word2vec) WordVector(typ vector.Type) *matrix.Matrix {
 // override
 //
 
-func (w *word2vec) Reporter(halt chan bool, xmit chan string) {
+func (w *word2vec) Reporter(xmit chan string) {
 	running := true
 	for running {
 		select {
-		case <-halt:
+		case <-w.haltupdt:
 			running = false
 		case m := <-w.updates:
 			// fmt.Println("Reporter() - " + m)
@@ -323,13 +323,13 @@ func (w *word2vec) Train(r io.ReadSeeker) error {
 	}
 
 	w.updates = make(chan string)
-	halt := make(chan bool)
+	w.haltupdt = make(chan bool)
 
 	// uncomment when debugging
 	// cannot run the wego bin unless you do: "fatal error: all goroutines are asleep - deadlock!"
 
 	//xmit := make(chan string)
-	//go w.Reporter(halt, xmit)
+	//go w.Reporter(xmit)
 	//
 	//x := func() {
 	//	for {
@@ -350,7 +350,7 @@ func (w *word2vec) Train(r io.ReadSeeker) error {
 			return err
 		}
 	}
-	halt <- true
+	w.haltupdt <- true
 	return nil
 }
 
@@ -360,7 +360,7 @@ func (w *word2vec) modifiedtrain() error {
 		w.opts.Goroutines,
 		len(doc),
 	)
-	w.trialcount = 0
+
 	for i := 1; i <= w.opts.Iter; i++ {
 		trained, clk := make(chan struct{}), clock.New()
 		go w.modifiedobserve(trained, clk)
