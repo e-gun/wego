@@ -280,3 +280,11 @@ func (l *lexvec) WordVector(typ vector.Type) *matrix.Matrix {
 	}
 	return mat
 }
+
+//
+// modificaitons
+//
+
+func (l *lexvec) Reporter() {
+
+}

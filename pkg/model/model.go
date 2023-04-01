@@ -25,4 +25,5 @@ type Model interface {
 	Train(io.ReadSeeker) error
 	Save(io.Writer, vector.Type) error
 	WordVector(vector.Type) *matrix.Matrix
+	Reporter()
 }

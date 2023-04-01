@@ -200,3 +200,11 @@ func (g *glove) WordVector(typ vector.Type) *matrix.Matrix {
 	}
 	return mat
 }
+
+//
+// modificaitons
+//
+
+func (g *glove) Reporter() {
+
+}

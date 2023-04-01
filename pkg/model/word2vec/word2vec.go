@@ -260,7 +260,7 @@ func (w *word2vec) WordVector(typ vector.Type) *matrix.Matrix {
 // override
 //
 
-func (w *word2vec) Reporter() chan string {
+func (w *word2vec) Reporter() {
 	for {
 		//if w.trialcount > 0 {
 		//	fmt.Println(w.trialcount)
@@ -269,7 +269,6 @@ func (w *word2vec) Reporter() chan string {
 		w.trialcount += 1
 		fmt.Println(w.trialcount)
 		fmt.Println("report: " + m)
-
 	}
 }
 
@@ -323,7 +322,7 @@ func (w *word2vec) Train(r io.ReadSeeker) error {
 	}
 
 	w.updates = make(chan string)
-	// go w.Reporter()
+	go w.Reporter()
 
 	if w.opts.DocInMemory {
 		if err := w.modifiedtrain(); err != nil {
