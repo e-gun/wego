@@ -46,6 +46,8 @@ type word2vec struct {
 	currentlr  float64
 	mod        mod
 	optimizer  optimizer
+	updates    chan string
+	trialcount int
 
 	verbose *verbose.Verbose
 }
@@ -71,7 +73,7 @@ func NewForOptions(opts Options) (model.Model, error) {
 	}, nil
 }
 
-func (w *word2vec) Train(r io.ReadSeeker) error {
+func (w *word2vec) OriginalTrain(r io.ReadSeeker) error {
 	if w.opts.DocInMemory {
 		w.corpus = memory.New(r, w.opts.ToLower, w.opts.MaxCount, w.opts.MinCount)
 	} else {
@@ -252,4 +254,156 @@ func (w *word2vec) WordVector(typ vector.Type) *matrix.Matrix {
 		)
 	}
 	return mat
+}
+
+//
+// override
+//
+
+func (w *word2vec) Reporter() chan string {
+	for {
+		//if w.trialcount > 0 {
+		//	fmt.Println(w.trialcount)
+		//}
+		m := <-w.updates
+		w.trialcount += 1
+		fmt.Println(w.trialcount)
+		fmt.Println("report: " + m)
+
+	}
+}
+
+func (w *word2vec) Train(r io.ReadSeeker) error {
+	if w.opts.DocInMemory {
+		w.corpus = memory.New(r, w.opts.ToLower, w.opts.MaxCount, w.opts.MinCount)
+	} else {
+		w.corpus = fs.New(r, w.opts.ToLower, w.opts.MaxCount, w.opts.MinCount)
+	}
+
+	if err := w.corpus.Load(nil, w.verbose, w.opts.LogBatch); err != nil {
+		return err
+	}
+
+	dic, dim := w.corpus.Dictionary(), w.opts.Dim
+
+	w.param = matrix.New(
+		dic.Len(),
+		dim,
+		func(_ int, vec []float64) {
+			for i := 0; i < dim; i++ {
+				vec[i] = (rand.Float64() - 0.5) / float64(dim)
+			}
+		},
+	)
+
+	w.subsampler = subsample.New(dic, w.opts.SubsampleThreshold)
+
+	switch w.opts.ModelType {
+	case SkipGram:
+		w.mod = newSkipGram(w.opts)
+	case Cbow:
+		w.mod = newCbow(w.opts)
+	default:
+		return errors.Errorf("invalid model: %s not in %s|%s", w.opts.ModelType, Cbow, SkipGram)
+	}
+
+	switch w.opts.OptimizerType {
+	case NegativeSampling:
+		w.optimizer = newNegativeSampling(
+			w.corpus.Dictionary(),
+			w.opts,
+		)
+	case HierarchicalSoftmax:
+		w.optimizer = newHierarchicalSoftmax(
+			w.corpus.Dictionary(),
+			w.opts,
+		)
+	default:
+		return errors.Errorf("invalid optimizer: %s not in %s|%s", w.opts.OptimizerType, NegativeSampling, HierarchicalSoftmax)
+	}
+
+	w.updates = make(chan string)
+	// go w.Reporter()
+
+	if w.opts.DocInMemory {
+		if err := w.modifiedtrain(); err != nil {
+			return err
+		}
+	} else {
+		if err := w.modifiedbatchTrain(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (w *word2vec) modifiedtrain() error {
+	doc := w.corpus.IndexedDoc()
+	indexPerThread := modelutil.IndexPerThread(
+		w.opts.Goroutines,
+		len(doc),
+	)
+	w.trialcount = 0
+	for i := 1; i <= w.opts.Iter; i++ {
+		trained, clk := make(chan struct{}), clock.New()
+		go w.modifiedobserve(trained, clk)
+
+		sem := semaphore.NewWeighted(int64(w.opts.Goroutines))
+		wg := &sync.WaitGroup{}
+
+		for i := 0; i < w.opts.Goroutines; i++ {
+			wg.Add(1)
+			s, e := indexPerThread[i], indexPerThread[i+1]
+			go w.trainPerThread(doc[s:e], trained, sem, wg)
+		}
+
+		wg.Wait()
+		close(trained)
+	}
+	return nil
+}
+
+func (w *word2vec) modifiedbatchTrain() error {
+	for i := 1; i <= w.opts.Iter; i++ {
+		trained, clk := make(chan struct{}), clock.New()
+		go w.modifiedobserve(trained, clk)
+
+		sem := semaphore.NewWeighted(int64(w.opts.Goroutines))
+		wg := &sync.WaitGroup{}
+
+		in := make(chan []int, w.opts.Goroutines)
+		go w.corpus.BatchWords(in, w.opts.BatchSize)
+		for doc := range in {
+			wg.Add(1)
+			go w.trainPerThread(doc, trained, sem, wg)
+		}
+
+		wg.Wait()
+		close(trained)
+	}
+	return nil
+}
+
+func (w *word2vec) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
+	var cnt int
+	for range trained {
+		cnt++
+		if cnt%w.opts.UpdateLRBatch == 0 {
+			if w.currentlr < w.opts.MinLR {
+				w.currentlr = w.opts.MinLR
+			} else {
+				w.currentlr = w.opts.Initlr * (1.0 - float64(cnt)/float64(w.corpus.Len()))
+			}
+		}
+		w.verbose.Do(func() {
+			if cnt%w.opts.LogBatch == 0 {
+				// fmt.Printf("trained %d words %v\r", cnt, clk.AllElapsed())
+				w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
+			}
+		})
+	}
+	w.verbose.Do(func() {
+		// fmt.Printf("trained %d words %v\r\n", cnt, clk.AllElapsed())
+		w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
+	})
 }
