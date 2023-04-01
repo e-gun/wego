@@ -46,10 +46,8 @@ type word2vec struct {
 	currentlr  float64
 	mod        mod
 	optimizer  optimizer
+	verbose    *verbose.Verbose
 	updates    chan string
-	trialcount int
-
-	verbose *verbose.Verbose
 }
 
 func New(opts ...ModelOption) (model.Model, error) {
@@ -260,15 +258,15 @@ func (w *word2vec) WordVector(typ vector.Type) *matrix.Matrix {
 // override
 //
 
-func (w *word2vec) Reporter() {
+func (w *word2vec) Reporter(ctx context.Context, snd chan string) {
 	for {
-		//if w.trialcount > 0 {
-		//	fmt.Println(w.trialcount)
-		//}
-		m := <-w.updates
-		w.trialcount += 1
-		fmt.Println(w.trialcount)
-		fmt.Println("report: " + m)
+		select {
+		case <-ctx.Done():
+			break
+		case m := <-w.updates:
+			snd <- m
+			fmt.Println("report: " + m)
+		}
 	}
 }
 
@@ -322,7 +320,7 @@ func (w *word2vec) Train(r io.ReadSeeker) error {
 	}
 
 	w.updates = make(chan string)
-	go w.Reporter()
+	// go w.Reporter()
 
 	if w.opts.DocInMemory {
 		if err := w.modifiedtrain(); err != nil {
@@ -342,7 +340,7 @@ func (w *word2vec) modifiedtrain() error {
 		w.opts.Goroutines,
 		len(doc),
 	)
-	w.trialcount = 0
+
 	for i := 1; i <= w.opts.Iter; i++ {
 		trained, clk := make(chan struct{}), clock.New()
 		go w.modifiedobserve(trained, clk)
@@ -405,4 +403,5 @@ func (w *word2vec) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
 		// fmt.Printf("trained %d words %v\r\n", cnt, clk.AllElapsed())
 		w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
 	})
+	close(w.updates)
 }

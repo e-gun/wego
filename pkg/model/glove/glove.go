@@ -202,9 +202,9 @@ func (g *glove) WordVector(typ vector.Type) *matrix.Matrix {
 }
 
 //
-// modificaitons
+// modifications
 //
 
-func (g *glove) Reporter() {
+func (g *glove) Reporter(ctx context.Context, snd chan string) {
 
 }

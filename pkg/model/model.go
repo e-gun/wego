@@ -15,6 +15,7 @@
 package model
 
 import (
+	"context"
 	"io"
 
 	"github.com/e-gun/wego/pkg/model/modelutil/matrix"
@@ -25,5 +26,5 @@ type Model interface {
 	Train(io.ReadSeeker) error
 	Save(io.Writer, vector.Type) error
 	WordVector(vector.Type) *matrix.Matrix
-	Reporter()
+	Reporter(context.Context, chan string)
 }

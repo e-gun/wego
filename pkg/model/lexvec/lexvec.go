@@ -285,6 +285,6 @@ func (l *lexvec) WordVector(typ vector.Type) *matrix.Matrix {
 // modificaitons
 //
 
-func (l *lexvec) Reporter() {
+func (l *lexvec) Reporter(ctx context.Context, snd chan string) {
 
 }
