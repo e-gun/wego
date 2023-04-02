@@ -43,6 +43,10 @@ type glove struct {
 	param  *matrix.Matrix
 	solver solver
 
+	haltupdt        chan bool
+	interationcount int
+	latestnews      string
+
 	verbose *verbose.Verbose
 }
 
@@ -65,7 +69,7 @@ func NewForOptions(opts Options) (model.Model, error) {
 	}, nil
 }
 
-func (g *glove) Train(r io.ReadSeeker) error {
+func (g *glove) OriginalTrain(r io.ReadSeeker) error {
 	if g.opts.DocInMemory {
 		g.corpus = memory.New(r, g.opts.ToLower, g.opts.MaxCount, g.opts.MinCount)
 	} else {
@@ -206,5 +210,101 @@ func (g *glove) WordVector(typ vector.Type) *matrix.Matrix {
 //
 
 func (g *glove) Reporter(ct chan int, m chan string) {
+	running := true
+	for running {
+		select {
+		case <-g.haltupdt:
+			running = false
+		default:
+			ct <- g.interationcount
+			m <- g.latestnews
+		}
+	}
+}
 
+func (g *glove) Train(r io.ReadSeeker) error {
+	if g.opts.DocInMemory {
+		g.corpus = memory.New(r, g.opts.ToLower, g.opts.MaxCount, g.opts.MinCount)
+	} else {
+		g.corpus = fs.New(r, g.opts.ToLower, g.opts.MaxCount, g.opts.MinCount)
+	}
+
+	if err := g.corpus.Load(
+		&corpus.WithCooccurrence{
+			CountType: g.opts.CountType,
+			Window:    g.opts.Window,
+		},
+		g.verbose, g.opts.LogBatch,
+	); err != nil {
+		return err
+	}
+
+	dic, dim := g.corpus.Dictionary(), g.opts.Dim
+
+	dimAndBias := dim + 1
+	g.param = matrix.New(
+		dic.Len()*2,
+		dimAndBias,
+		func(_ int, vec []float64) {
+			for i := 0; i < dim+1; i++ {
+				vec[i] = rand.Float64() / float64(dim)
+			}
+		},
+	)
+
+	switch g.opts.SolverType {
+	case Stochastic:
+		g.solver = newStochastic(g.opts)
+	case AdaGrad:
+		g.solver = newAdaGrad(dic, g.opts)
+	default:
+		return errors.Errorf("invalid solver: %s not in %s|%s", g.opts.SolverType, Stochastic, AdaGrad)
+	}
+
+	return g.modifiedtrain()
+}
+
+func (g *glove) modifiedtrain() error {
+	items := g.makeItems(g.corpus.Cooccurrence())
+	itemSize := len(items)
+	indexPerThread := modelutil.IndexPerThread(
+		g.opts.Goroutines,
+		itemSize,
+	)
+
+	for i := 0; i < g.opts.Iter; i++ {
+		g.interationcount = i
+		trained, clk := make(chan struct{}), clock.New()
+		go g.modifiedobserve(trained, clk)
+
+		sem := semaphore.NewWeighted(int64(g.opts.Goroutines))
+		wg := &sync.WaitGroup{}
+
+		for i := 0; i < g.opts.Goroutines; i++ {
+			wg.Add(1)
+			s, e := indexPerThread[i], indexPerThread[i+1]
+			go g.trainPerThread(items[s:e], trained, sem, wg)
+		}
+
+		wg.Wait()
+		close(trained)
+	}
+	return nil
+}
+
+func (g *glove) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
+	var cnt int
+	for range trained {
+		g.verbose.Do(func() {
+			cnt++
+			if cnt%g.opts.LogBatch == 0 {
+				// fmt.Printf("trained %d items %v\r", cnt, clk.AllElapsed())
+				g.latestnews = fmt.Sprintf("trained %d items %v\r", cnt, clk.AllElapsed())
+			}
+		})
+	}
+	g.verbose.Do(func() {
+		// fmt.Printf("trained %d items %v\r\n", cnt, clk.AllElapsed())
+		g.latestnews = fmt.Sprintf("trained %d items %v\r\n", cnt, clk.AllElapsed())
+	})
 }
