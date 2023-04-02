@@ -46,6 +46,10 @@ type lexvec struct {
 	subsampler *subsample.Subsampler
 	currentlr  float64
 
+	haltupdt        chan bool
+	interationcount int
+	latestnews      string
+
 	verbose *verbose.Verbose
 }
 
@@ -70,7 +74,7 @@ func NewForOptions(opts Options) (model.Model, error) {
 	}, nil
 }
 
-func (l *lexvec) Train(r io.ReadSeeker) error {
+func (l *lexvec) OriginalTrain(r io.ReadSeeker) error {
 	if l.opts.DocInMemory {
 		l.corpus = memory.New(r, l.opts.ToLower, l.opts.MaxCount, l.opts.MinCount)
 	} else {
@@ -286,5 +290,143 @@ func (l *lexvec) WordVector(typ vector.Type) *matrix.Matrix {
 //
 
 func (l *lexvec) Reporter(ct chan int, m chan string) {
+	running := true
+	for running {
+		select {
+		case <-l.haltupdt:
+			running = false
+		default:
+			ct <- l.interationcount
+			m <- l.latestnews
+		}
+	}
+}
 
+func (l *lexvec) Train(r io.ReadSeeker) error {
+	if l.opts.DocInMemory {
+		l.corpus = memory.New(r, l.opts.ToLower, l.opts.MaxCount, l.opts.MinCount)
+	} else {
+		l.corpus = fs.New(r, l.opts.ToLower, l.opts.MaxCount, l.opts.MinCount)
+	}
+
+	if err := l.corpus.Load(
+		&corpus.WithCooccurrence{
+			CountType: co.Increment,
+			Window:    l.opts.Window,
+		},
+		l.verbose, l.opts.BatchSize,
+	); err != nil {
+		return err
+	}
+
+	dic, dim := l.corpus.Dictionary(), l.opts.Dim
+
+	l.param = matrix.New(
+		dic.Len()*2,
+		dim,
+		func(_ int, vec []float64) {
+			for i := 0; i < dim; i++ {
+				vec[i] = (rand.Float64() - 0.5) / float64(dim)
+			}
+		},
+	)
+
+	l.haltupdt = make(chan bool)
+
+	l.subsampler = subsample.New(dic, l.opts.SubsampleThreshold)
+
+	if l.opts.DocInMemory {
+		if err := l.modifiedtrain(); err != nil {
+			return err
+		}
+	} else {
+		if err := l.modifiedbatchTrain(); err != nil {
+			return err
+		}
+	}
+	l.haltupdt <- true
+	return nil
+}
+
+func (l *lexvec) modifiedtrain() error {
+	items, err := l.makeItems(l.corpus.Cooccurrence())
+	if err != nil {
+		return err
+	}
+
+	doc := l.corpus.IndexedDoc()
+	indexPerThread := modelutil.IndexPerThread(
+		l.opts.Goroutines,
+		len(doc),
+	)
+
+	for i := 1; i <= l.opts.Iter; i++ {
+		l.interationcount = i
+		trained, clk := make(chan struct{}), clock.New()
+		go l.modifiedobserve(trained, clk)
+
+		sem := semaphore.NewWeighted(int64(l.opts.Goroutines))
+		wg := &sync.WaitGroup{}
+
+		for i := 0; i < l.opts.Goroutines; i++ {
+			wg.Add(1)
+			s, e := indexPerThread[i], indexPerThread[i+1]
+			go l.trainPerThread(doc[s:e], items, trained, sem, wg)
+		}
+
+		wg.Wait()
+		close(trained)
+	}
+	return nil
+}
+
+func (l *lexvec) modifiedbatchTrain() error {
+	items, err := l.makeItems(l.corpus.Cooccurrence())
+	if err != nil {
+		return err
+	}
+
+	for i := 1; i <= l.opts.Iter; i++ {
+		l.interationcount = i
+		trained, clk := make(chan struct{}), clock.New()
+		go l.modifiedobserve(trained, clk)
+
+		sem := semaphore.NewWeighted(int64(l.opts.Goroutines))
+		wg := &sync.WaitGroup{}
+
+		in := make(chan []int, l.opts.Goroutines)
+		go l.corpus.BatchWords(in, l.opts.BatchSize)
+		for doc := range in {
+			wg.Add(1)
+			go l.trainPerThread(doc, items, trained, sem, wg)
+		}
+
+		wg.Wait()
+		close(trained)
+	}
+	return nil
+}
+
+func (l *lexvec) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
+	var cnt int
+	for range trained {
+		cnt++
+		if cnt%l.opts.UpdateLRBatch == 0 {
+			if l.currentlr < l.opts.MinLR {
+				l.currentlr = l.opts.MinLR
+			} else {
+				l.currentlr = l.opts.Initlr * (1.0 - float64(cnt)/float64(l.corpus.Len()))
+			}
+		}
+		l.verbose.Do(func() {
+			if cnt%l.opts.LogBatch == 0 {
+				// fmt.Printf("trained %d words %v\r", cnt, clk.AllElapsed())
+				l.latestnews = fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
+			}
+		})
+	}
+	l.verbose.Do(func() {
+		// fmt.Printf("trained %d words %v\r\n", cnt, clk.AllElapsed())
+		l.latestnews = fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
+	})
 }

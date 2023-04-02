@@ -41,12 +41,12 @@ type word2vec struct {
 
 	corpus corpus.Corpus
 
-	param           *matrix.Matrix
-	subsampler      *subsample.Subsampler
-	currentlr       float64
-	mod             mod
-	optimizer       optimizer
-	updates         chan string
+	param      *matrix.Matrix
+	subsampler *subsample.Subsampler
+	currentlr  float64
+	mod        mod
+	optimizer  optimizer
+
 	haltupdt        chan bool
 	interationcount int
 	latestnews      string
@@ -324,7 +324,6 @@ func (w *word2vec) Train(r io.ReadSeeker) error {
 		return errors.Errorf("invalid optimizer: %s not in %s|%s", w.opts.OptimizerType, NegativeSampling, HierarchicalSoftmax)
 	}
 
-	w.updates = make(chan string)
 	w.haltupdt = make(chan bool)
 
 	// uncomment when debugging
@@ -367,6 +366,7 @@ func (w *word2vec) modifiedtrain() error {
 	)
 
 	for i := 1; i <= w.opts.Iter; i++ {
+		w.interationcount = i
 		trained, clk := make(chan struct{}), clock.New()
 		go w.modifiedobserve(trained, clk)
 
@@ -387,6 +387,7 @@ func (w *word2vec) modifiedtrain() error {
 
 func (w *word2vec) modifiedbatchTrain() error {
 	for i := 1; i <= w.opts.Iter; i++ {
+		w.interationcount = i
 		trained, clk := make(chan struct{}), clock.New()
 		go w.modifiedobserve(trained, clk)
 
@@ -422,7 +423,6 @@ func (w *word2vec) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
 				// fmt.Printf("trained %d words %v\r", cnt, clk.AllElapsed())
 				// w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
 				w.latestnews = fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
-				w.interationcount += 1
 			}
 		})
 	}
@@ -430,6 +430,5 @@ func (w *word2vec) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
 		// fmt.Printf("trained %d words %v\r\n", cnt, clk.AllElapsed())
 		// w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
 		w.latestnews = fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
-		w.interationcount += 1
 	})
 }
