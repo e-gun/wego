@@ -22,7 +22,6 @@ import (
 
 	"github.com/e-gun/wego/pkg/corpus/dictionary"
 	"github.com/e-gun/wego/pkg/model/modelutil/matrix"
-	"github.com/e-gun/wego/pkg/util/clock"
 	"github.com/e-gun/wego/pkg/util/verbose"
 	"github.com/pkg/errors"
 )
@@ -46,7 +45,7 @@ func Save(f io.Writer, dic *dictionary.Dictionary, mat *matrix.Matrix, verbose *
 	defer writer.Flush()
 
 	var buf bytes.Buffer
-	clk := clock.New()
+	// clk := clock.New()
 	for i := 0; i < dic.Len(); i++ {
 		word, _ := dic.Word(i)
 		fmt.Fprintf(&buf, "%v ", word)
@@ -56,13 +55,13 @@ func Save(f io.Writer, dic *dictionary.Dictionary, mat *matrix.Matrix, verbose *
 		fmt.Fprintln(&buf)
 		verbose.Do(func() {
 			if i%logBatch == 0 {
-				fmt.Printf("saved %d words %v\r", i, clk.AllElapsed())
+				// fmt.Printf("saved %d words %v\r", i, clk.AllElapsed())
 			}
 		})
 	}
 	writer.WriteString(fmt.Sprintf("%v", buf.String()))
 	verbose.Do(func() {
-		fmt.Printf("saved %d words %v\r\n", dic.Len(), clk.AllElapsed())
+		// fmt.Printf("saved %d words %v\r\n", dic.Len(), clk.AllElapsed())
 	})
 	return nil
 }

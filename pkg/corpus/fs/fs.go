@@ -15,7 +15,6 @@
 package fs
 
 import (
-	"fmt"
 	"io"
 	"strings"
 
@@ -23,7 +22,6 @@ import (
 	co "github.com/e-gun/wego/pkg/corpus/cooccurrence"
 	"github.com/e-gun/wego/pkg/corpus/cpsutil"
 	"github.com/e-gun/wego/pkg/corpus/dictionary"
-	"github.com/e-gun/wego/pkg/util/clock"
 	"github.com/e-gun/wego/pkg/util/verbose"
 )
 
@@ -97,7 +95,7 @@ func (c *Corpus) Len() int {
 }
 
 func (c *Corpus) Load(with *corpus.WithCooccurrence, verbose *verbose.Verbose, logBatch int) error {
-	clk := clock.New()
+	// clk := clock.New()
 	if err := cpsutil.ReadWord(c.doc, func(word string) error {
 		if c.toLower {
 			word = strings.ToLower(word)
@@ -107,7 +105,7 @@ func (c *Corpus) Load(with *corpus.WithCooccurrence, verbose *verbose.Verbose, l
 		c.maxLen++
 		verbose.Do(func() {
 			if c.maxLen%logBatch == 0 {
-				fmt.Printf("read %d words %v\r", c.maxLen, clk.AllElapsed())
+				// fmt.Printf("read %d words %v\r", c.maxLen, clk.AllElapsed())
 			}
 		})
 
@@ -116,10 +114,10 @@ func (c *Corpus) Load(with *corpus.WithCooccurrence, verbose *verbose.Verbose, l
 		return err
 	}
 	verbose.Do(func() {
-		fmt.Printf("read %d words %v\r\n", c.maxLen, clk.AllElapsed())
+		// fmt.Printf("read %d words %v\r\n", c.maxLen, clk.AllElapsed())
 	})
 
-	clk = clock.New()
+	// clk = clock.New()
 	var (
 		err    error
 		cursor int
@@ -139,7 +137,7 @@ func (c *Corpus) Load(with *corpus.WithCooccurrence, verbose *verbose.Verbose, l
 			cursor++
 			verbose.Do(func() {
 				if cursor%logBatch == 0 {
-					fmt.Printf("read %d tuples %v\r", cursor, clk.AllElapsed())
+					// fmt.Printf("read %d tuples %v\r", cursor, clk.AllElapsed())
 				}
 			})
 			return nil
@@ -147,7 +145,7 @@ func (c *Corpus) Load(with *corpus.WithCooccurrence, verbose *verbose.Verbose, l
 			return err
 		}
 		verbose.Do(func() {
-			fmt.Printf("read %d tuples %v\r\n", cursor, clk.AllElapsed())
+			// fmt.Printf("read %d tuples %v\r\n", cursor, clk.AllElapsed())
 		})
 	}
 
