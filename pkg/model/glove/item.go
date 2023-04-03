@@ -15,7 +15,6 @@
 package glove
 
 import (
-	"fmt"
 	"math"
 
 	co "github.com/e-gun/wego/pkg/corpus/cooccurrence"
@@ -48,12 +47,13 @@ func (g *glove) makeItems(cooc *co.Cooccurrence) []item {
 		idx++
 		g.verbose.Do(func() {
 			if idx%g.opts.LogBatch == 0 {
-				fmt.Printf("build %d items %v\r", idx, clk.AllElapsed())
+				clk.AllElapsed()
+				// fmt.Printf("build %d items %v\r", idx, clk.AllElapsed())
 			}
 		})
 	}
 	g.verbose.Do(func() {
-		fmt.Printf("build %d items %v\r\n", idx, clk.AllElapsed())
+		// fmt.Printf("build %d items %v\r\n", idx, clk.AllElapsed())
 	})
 	return res
 }
