@@ -1,3 +1,28 @@
+```
+NB the vectorbot *can* trigger a panic when calling this code, but it does not *always* do so. Very frustrating...
+```
+```
+[HGS] [AV: 98.384s][Δ: 98.384s] (0.5%) checking need to model Isocrates (gr0010)
+[HGS] [AV: 167.781s][Δ: 69.396s] (0.9%) checking need to model Hesiodus (gr0020)
+[HGS] [AV: 173.646s][Δ: 5.865s] (1.4%) checking need to model Xenophon (gr0032)
+[HGS] [AV: 187.382s][Δ: 13.736s] (1.8%) checking need to model Alexandri Magni Epistulae (gr0042)
+[HGS] [AV: 187.461s][Δ: 0.079s] (2.3%) checking need to model Menippus (gr0052)
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x2 addr=0x28 pc=0x102e9a674]
+
+goroutine 7537 [running]:
+github.com/e-gun/wego/pkg/model/word2vec.(*hierarchicalSoftmax).optim(0x1401ade0000, 0x102964180?, 0x3f9999999999999a, {0x1404027dd80, 0x7d, 0x102931150?}, {0x1401945a400, 0x7d, 0x14020a8bf1f?})
+	/Users/erik/Development/go/pkg/mod/github.com/e-gun/wego@v0.0.11/pkg/model/word2vec/optimizer.go:115 +0x84
+github.com/e-gun/wego/pkg/model/word2vec.(*skipGram).trainOne(0x14017b30000, {0x140102a7f78, 0x2bef, 0x1?}, 0x8, 0x829de59?, 0x1401b958000, {0x103c06920, 0x1401ade0000})
+	/Users/erik/Development/go/pkg/mod/github.com/e-gun/wego@v0.0.11/pkg/model/word2vec/model.go:73 +0x1c4
+github.com/e-gun/wego/pkg/model/word2vec.(*word2vec).trainPerThread(0x1401adf4000, {0x140102a7f78?, 0x2bef, 0x40411}, 0x14012f6f7a0?, 0x10303f368?, 0x1401470c000?)
+	/Users/erik/Development/go/pkg/mod/github.com/e-gun/wego@v0.0.11/pkg/model/word2vec/word2vec.go:203 +0x160
+created by github.com/e-gun/wego/pkg/model/word2vec.(*word2vec).modifiedtrain
+	/Users/erik/Development/go/pkg/mod/github.com/e-gun/wego@v0.0.11/pkg/model/word2vec/word2vec.go:379 +0x274
+
+```
+
+
 # Word Embeddings in Go
 
 [![Go](https://github.com/ynqa/wego/actions/workflows/go.yml/badge.svg)](https://github.com/ynqa/wego/actions/workflows/go.yml)
