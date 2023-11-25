@@ -39,5 +39,15 @@ func (n *Node) GetPath(depth int) []*Node {
 	if depth > len(n.cache) {
 		depth = len(n.cache)
 	}
+
+	// hacky dodge for next; not sure what the consequences will be...
+	// "panic: runtime error: slice bounds out of range [:1] with capacity 0"
+	// but do note that the other panic at "pkg/model/word2vec/optimizer.go:115" is calling GetPath()
+
+	if depth == 1 && len(n.cache) == 0 {
+		n.cache = make([]*Node, 0)
+		return n.cache
+	}
+
 	return n.cache[:depth]
 }

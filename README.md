@@ -22,6 +22,26 @@ created by github.com/e-gun/wego/pkg/model/word2vec.(*word2vec).modifiedtrain
 
 ```
 
+```
+another:
+
+panic: runtime error: slice bounds out of range [:1] with capacity 0
+
+goroutine 9721 [running]:
+github.com/e-gun/wego/pkg/corpus/dictionary/node.(*Node).GetPath(0x140087a2e88?, 0x10249bfb8?)
+	/Users/erik/Development/go/pkg/mod/github.com/e-gun/wego@v0.0.11/pkg/corpus/dictionary/node/node.go:42 +0x84
+github.com/e-gun/wego/pkg/model/word2vec.(*hierarchicalSoftmax).optim(...)
+	/Users/erik/Development/go/pkg/mod/github.com/e-gun/wego@v0.0.11/pkg/model/word2vec/optimizer.go:112
+github.com/e-gun/wego/pkg/model/word2vec.(*skipGram).trainOne(0x140086ac480, {0x1400a2fc000, 0x8cb, 0x1?}, 0x1, 0x3f9999999999999a, 0x14003229680, {0x1040a43a0, 0x14003229800?})
+	/Users/erik/Development/go/pkg/mod/github.com/e-gun/wego@v0.0.11/pkg/model/word2vec/model.go:73 +0x1f0
+github.com/e-gun/wego/pkg/model/word2vec.(*word2vec).trainPerThread(0x14006785d40, {0x1400a2fc000?, 0x8cb, 0xd800}, 0x0?, 0x1025091e4?, 0x0?)
+	/Users/erik/Development/go/pkg/mod/github.com/e-gun/wego@v0.0.11/pkg/model/word2vec/word2vec.go:203 +0x164
+created by github.com/e-gun/wego/pkg/model/word2vec.(*word2vec).modifiedtrain in goroutine 9717
+	/Users/erik/Development/go/pkg/mod/github.com/e-gun/wego@v0.0.11/pkg/model/word2vec/word2vec.go:379 +0x254
+
+
+```
+
 
 # Word Embeddings in Go
 
