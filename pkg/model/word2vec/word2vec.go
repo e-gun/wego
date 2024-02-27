@@ -52,7 +52,7 @@ type word2vec struct {
 	latestnews      string
 
 	verbose *verbose.Verbose
-	ctx     context.Context
+	Ctx     context.Context
 }
 
 func New(opts ...ModelOption) (model.CtxModel, error) {
@@ -67,12 +67,14 @@ func New(opts ...ModelOption) (model.CtxModel, error) {
 func NewForOptions(opts Options) (model.CtxModel, error) {
 	// TODO: validate Options
 	v := verbose.New(opts.Verbose)
+	ctx := context.Background()
 	return &word2vec{
 		opts: opts,
 
 		currentlr: opts.Initlr,
 
 		verbose: v,
+		Ctx:     ctx,
 	}, nil
 }
 
@@ -264,7 +266,7 @@ func (w *word2vec) WordVector(typ vector.Type) *matrix.Matrix {
 //
 
 func (w *word2vec) ContextDone() bool {
-	if w.ctx.Err() != nil {
+	if w.Ctx.Err() != nil {
 		return true
 	} else {
 		return false
