@@ -467,6 +467,9 @@ func (w *word2vec) trainPerThread(
 		if w.subsampler.Trial(id) && !w.ContextDone() {
 			w.mod.trainOne(doc, pos, w.currentlr, w.param, w.optimizer)
 		}
+		if w.ContextDone() {
+			fmt.Println("trainPerThread() reports ContextDone")
+		}
 		trained <- struct{}{}
 	}
 
