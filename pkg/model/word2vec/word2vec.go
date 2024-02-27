@@ -67,14 +67,10 @@ func New(opts ...ModelOption) (model.CtxModel, error) {
 func NewForOptions(opts Options) (model.CtxModel, error) {
 	// TODO: validate Options
 	v := verbose.New(opts.Verbose)
-	ctx := context.Background()
 	return &word2vec{
-		opts: opts,
-
+		opts:      opts,
 		currentlr: opts.Initlr,
-
-		verbose: v,
-		Ctx:     ctx,
+		verbose:   v,
 	}, nil
 }
 
