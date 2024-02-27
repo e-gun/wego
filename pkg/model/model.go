@@ -27,3 +27,11 @@ type Model interface {
 	WordVector(vector.Type) *matrix.Matrix
 	Reporter(chan int, chan string)
 }
+
+type CtxModel interface {
+	Train(io.ReadSeeker) error
+	Save(io.Writer, vector.Type) error
+	WordVector(vector.Type) *matrix.Matrix
+	Reporter(chan int, chan string)
+	ContextDone() bool
+}

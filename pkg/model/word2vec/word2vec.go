@@ -52,9 +52,10 @@ type word2vec struct {
 	latestnews      string
 
 	verbose *verbose.Verbose
+	ctx     context.Context
 }
 
-func New(opts ...ModelOption) (model.Model, error) {
+func New(opts ...ModelOption) (model.CtxModel, error) {
 	options := DefaultOptions()
 	for _, fn := range opts {
 		fn(&options)
@@ -63,7 +64,7 @@ func New(opts ...ModelOption) (model.Model, error) {
 	return NewForOptions(options)
 }
 
-func NewForOptions(opts Options) (model.Model, error) {
+func NewForOptions(opts Options) (model.CtxModel, error) {
 	// TODO: validate Options
 	v := verbose.New(opts.Verbose)
 	return &word2vec{
@@ -183,7 +184,7 @@ func (w *word2vec) batchTrain() error {
 	return nil
 }
 
-func (w *word2vec) trainPerThread(
+func (w *word2vec) OriginaltrainPerThread(
 	doc []int,
 	trained chan struct{},
 	sem *semaphore.Weighted,
@@ -256,6 +257,18 @@ func (w *word2vec) WordVector(typ vector.Type) *matrix.Matrix {
 		)
 	}
 	return mat
+}
+
+//
+// new
+//
+
+func (w *word2vec) ContextDone() bool {
+	if w.ctx.Err() != nil {
+		return true
+	} else {
+		return false
+	}
 }
 
 //
@@ -431,4 +444,29 @@ func (w *word2vec) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
 		// w.updates <- fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
 		w.latestnews = fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
 	})
+}
+
+func (w *word2vec) trainPerThread(
+	doc []int,
+	trained chan struct{},
+	sem *semaphore.Weighted,
+	wg *sync.WaitGroup,
+) error {
+	defer func() {
+		wg.Done()
+		sem.Release(1)
+	}()
+
+	if err := sem.Acquire(context.Background(), 1); err != nil {
+		return err
+	}
+
+	for pos, id := range doc {
+		if w.subsampler.Trial(id) && !w.ContextDone() {
+			w.mod.trainOne(doc, pos, w.currentlr, w.param, w.optimizer)
+		}
+		trained <- struct{}{}
+	}
+
+	return nil
 }
