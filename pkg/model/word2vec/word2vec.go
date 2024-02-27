@@ -261,12 +261,8 @@ func (w *word2vec) WordVector(typ vector.Type) *matrix.Matrix {
 // new
 //
 
-func (w *word2vec) ContextDone() bool {
-	if w.Ctx.Err() != nil {
-		return true
-	} else {
-		return false
-	}
+func (w *word2vec) InsertContext(ctx context.Context) {
+	w.Ctx = ctx
 }
 
 //

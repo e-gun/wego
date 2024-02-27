@@ -15,6 +15,7 @@
 package model
 
 import (
+	"context"
 	"io"
 
 	"github.com/e-gun/wego/pkg/model/modelutil/matrix"
@@ -33,5 +34,5 @@ type CtxModel interface {
 	Save(io.Writer, vector.Type) error
 	WordVector(vector.Type) *matrix.Matrix
 	Reporter(chan int, chan string)
-	ContextDone() bool
+	InsertContext(ctx context.Context)
 }
