@@ -29,7 +29,7 @@ type Model interface {
 	Reporter(chan int, chan string)
 }
 
-type CtxModel interface {
+type ModelWithCtx interface {
 	Train(io.ReadSeeker) error
 	Save(io.Writer, vector.Type) error
 	WordVector(vector.Type) *matrix.Matrix

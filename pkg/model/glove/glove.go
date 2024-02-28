@@ -48,9 +48,10 @@ type glove struct {
 	latestnews      string
 
 	verbose *verbose.Verbose
+	Ctx     context.Context
 }
 
-func New(opts ...ModelOption) (model.Model, error) {
+func New(opts ...ModelOption) (model.ModelWithCtx, error) {
 	options := DefaultOptions()
 	for _, fn := range opts {
 		fn(&options)
@@ -59,7 +60,7 @@ func New(opts ...ModelOption) (model.Model, error) {
 	return NewForOptions(options)
 }
 
-func NewForOptions(opts Options) (model.Model, error) {
+func NewForOptions(opts Options) (model.ModelWithCtx, error) {
 	// TODO: validate Options
 	v := verbose.New(opts.Verbose)
 	return &glove{
@@ -203,6 +204,14 @@ func (g *glove) WordVector(typ vector.Type) *matrix.Matrix {
 		)
 	}
 	return mat
+}
+
+//
+// new
+//
+
+func (g *glove) InsertContext(ctx context.Context) {
+	g.Ctx = ctx
 }
 
 //

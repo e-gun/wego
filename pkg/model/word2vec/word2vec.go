@@ -55,7 +55,7 @@ type word2vec struct {
 	Ctx     context.Context
 }
 
-func New(opts ...ModelOption) (model.CtxModel, error) {
+func New(opts ...ModelOption) (model.ModelWithCtx, error) {
 	options := DefaultOptions()
 	for _, fn := range opts {
 		fn(&options)
@@ -64,7 +64,7 @@ func New(opts ...ModelOption) (model.CtxModel, error) {
 	return NewForOptions(options)
 }
 
-func NewForOptions(opts Options) (model.CtxModel, error) {
+func NewForOptions(opts Options) (model.ModelWithCtx, error) {
 	// TODO: validate Options
 	v := verbose.New(opts.Verbose)
 	return &word2vec{
@@ -458,7 +458,7 @@ func (w *word2vec) trainPerThread(
 	for pos, id := range doc {
 		select {
 		case <-w.Ctx.Done():
-			fmt.Println("trainPerThread() reports Ctx.Done()")
+			// fmt.Println("trainPerThread() reports Ctx.Done()")
 			trained <- struct{}{}
 			return nil
 		default:

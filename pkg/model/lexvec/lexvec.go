@@ -51,9 +51,10 @@ type lexvec struct {
 	latestnews      string
 
 	verbose *verbose.Verbose
+	Ctx     context.Context
 }
 
-func New(opts ...ModelOption) (model.Model, error) {
+func New(opts ...ModelOption) (model.ModelWithCtx, error) {
 	options := DefaultOptions()
 	for _, fn := range opts {
 		fn(&options)
@@ -62,15 +63,13 @@ func New(opts ...ModelOption) (model.Model, error) {
 	return NewForOptions(options)
 }
 
-func NewForOptions(opts Options) (model.Model, error) {
+func NewForOptions(opts Options) (model.ModelWithCtx, error) {
 	// TODO: validate Options
 	v := verbose.New(opts.Verbose)
 	return &lexvec{
-		opts: opts,
-
+		opts:      opts,
 		currentlr: opts.Initlr,
-
-		verbose: v,
+		verbose:   v,
 	}, nil
 }
 
@@ -174,7 +173,7 @@ func (l *lexvec) batchTrain() error {
 	return nil
 }
 
-func (l *lexvec) trainPerThread(
+func (l *lexvec) originaltrainPerThread(
 	doc []int,
 	items map[uint64]float64,
 	trained chan struct{},
@@ -283,6 +282,14 @@ func (l *lexvec) WordVector(typ vector.Type) *matrix.Matrix {
 		)
 	}
 	return mat
+}
+
+//
+// new
+//
+
+func (l *lexvec) InsertContext(ctx context.Context) {
+	l.Ctx = ctx
 }
 
 //
@@ -429,4 +436,37 @@ func (l *lexvec) modifiedobserve(trained chan struct{}, clk *clock.Clock) {
 		// fmt.Printf("trained %d words %v\r\n", cnt, clk.AllElapsed())
 		l.latestnews = fmt.Sprintf("trained %d words %v", cnt, clk.AllElapsed())
 	})
+}
+
+func (l *lexvec) trainPerThread(
+	doc []int,
+	items map[uint64]float64,
+	trained chan struct{},
+	sem *semaphore.Weighted,
+	wg *sync.WaitGroup,
+) error {
+	defer func() {
+		wg.Done()
+		sem.Release(1)
+	}()
+
+	if err := sem.Acquire(context.Background(), 1); err != nil {
+		return err
+	}
+
+	for pos, id := range doc {
+		select {
+		case <-l.Ctx.Done():
+			// fmt.Println("trainPerThread() reports Ctx.Done()")
+			trained <- struct{}{}
+			return nil
+		default:
+			if l.subsampler.Trial(id) {
+				l.trainOne(doc, pos, items)
+			}
+		}
+		trained <- struct{}{}
+	}
+
+	return nil
 }
