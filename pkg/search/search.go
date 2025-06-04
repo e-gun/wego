@@ -46,9 +46,9 @@ func (neighbors Neighbors) Describe() {
 	}
 
 	writer := tablewriter.NewWriter(os.Stdout)
-	writer.SetHeader([]string{"Rank", "Word", "Similarity"})
-	writer.SetBorder(false)
-	writer.AppendBulk(table)
+	writer.Header([]string{"Rank", "Word", "Similarity"})
+	// writer.SetBorder(false)
+	writer.Bulk(table)
 	writer.Render()
 }
 
